@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="http://code.jquery.com/jquery-3.3.1.js"></script>
+	<script>		
+		//file:///Z:/denwer/www/denwer/index_cand.html?autoris=YXBpbGV0c2theWE6SGZldyY0Mzl4KV9kZmdhYg==&xitor_id=100111753680&xitor_type=CANDIDATES
+		var BASE_URL = "http://dev2.vqs.net:8080/api/v3/";
+		//var BASE_URL = "https://mtrac.mobilitie.com/api/v3/";
+		var ARREY_FIELDS = ["XITOR_KEY", "C_TOTAL_POLE_HT_W_ANT_FT", "C_GQ_SCIP_ANTENNA_HEIGHT", "C_OFFICIAL_RF_RAD_CENTER_RAD_FT", "C_GQ_SCP_RF_RAD_MEASURE", "C_CND_OFC_TWR_HT_FT", "C_GQ_SCIP_POLE_HEIGHT", "C_HEIGHT_OF_MW_ANTENNA_FT", "C_GQ_SCP_MW_RAD_CENTER"];
+		var PAIRS_OF_FIELDS = {
+			"C_TOTAL_POLE_HT_W_ANT_FT": "C_GQ_SCIP_ANTENNA_HEIGHT",
+			"C_OFFICIAL_RF_RAD_CENTER_RAD_FT": "C_GQ_SCP_RF_RAD_MEASURE",
+			"C_CND_OFC_TWR_HT_FT": "C_GQ_SCIP_POLE_HEIGHT",
+			"C_HEIGHT_OF_MW_ANTENNA_FT": "C_GQ_SCP_MW_RAD_CENTER"
+		};
+		//LightSalmon, lightGreen, yellow, lightBlue, lightPink	
+		var COLORS = ["#FFA07A", "#90EE90", "#FFFF00", "#ADD8E6", "#FFB6C1"]; 
+		var SCALE = [0.25, 0.5, 1.0, 1.5, 3];
+		var scaleIndex = 2;
+		var amendmentTextY = 24;
+		
+		function getParam() {
+			var strUrlParam = window.location.search.replace( '?', '').split('&');
+			
+			for (var i = 0; i < strUrlParam.length; i++) {
+				var str_param = strUrlParam[i].split('=');
+				if (str_param[0] === 'autoris' && str_param[1]){
+					var autoris = decodeURIComponent(str_param[1]);
+				}
+				if(str_param[0] === 'xitor_id' && str_param[1]){
+					var xitor_id = decodeURIComponent(str_param[1]);
+				}
+				if(str_param[0] === 'xitor_type' && str_param[1]){
+					var xitor_type = decodeURIComponent(str_param[1]);
+				}
+			}
+			getDataViaApi(autoris, xitor_id, xitor_type);
+		}
+		
+		function getDataViaApi(logPass, trackor_id, trackor_type){
+			
+			var vUrlLabelFields = BASE_URL + "trackor_types/" + trackor_type;
+			var vUrlValueFields = BASE_URL + "trackors/" + trackor_id;
+			var strPasLog = "Basic " + logPass;
+			var dataFieldLabel;
+			var dataFieldValue;
+			
+			jQuery.ajax({
+				method: "GET",
+				url: vUrlLabelFields,
+				headers: {
+					"Accept":"application/json",
+					"Authorization": strPasLog
+				},
+				data: { 
+					fields: ARREY_FIELDS.join(',')
+				},
+				success: function(data) {
+					dataFieldLabel = data;
+					queryCompletionCheck(dataFieldValue, dataFieldLabel);
+				}
+			});
+			
+    		jQuery.ajax({
+				method: "GET",
+				url: vUrlValueFields,
+				headers: {
+					"Accept":"application/json",
+					"Authorization": strPasLog
+				},
+				data: { 
+					fields: ARREY_FIELDS.join(',')
+				},
+				success: function(data) {
+					dataFieldValue = data;
+					queryCompletionCheck(dataFieldValue, dataFieldLabel);
+				}
+			});
+		}
+		
+		function queryCompletionCheck(dataFieldValue, dataFieldLabel){
+			if (dataFieldValue != undefined && dataFieldLabel != undefined){
+				creatingFieldObj(dataFieldValue, dataFieldLabel);
+			}
+		}
+		
+		function creatingFieldObj(dataFieldValue, dataFieldLabel) {
+			var newFieldObj = {};
+			for (var fieldLabelObj in dataFieldLabel) {
+			
+				if (dataFieldLabel[fieldLabelObj].name === "XITOR_KEY") {
+					var fieldName = "TRACKOR_KEY";
+					var fieldValue = dataFieldValue[fieldName];
+				} else {
+					var fieldName = dataFieldLabel[fieldLabelObj].name;
+					var fieldValue = parseFloat(dataFieldValue[fieldName]);
+				}
+				var fieldLabel = dataFieldLabel[fieldLabelObj].label;
+				
+				newFieldObj[fieldName] = {
+					"label": fieldLabel,
+					"value": fieldValue
+				};
+			}
+			searchMaximum(newFieldObj);
+		}
+		
+		function searchMaximum(fieldObj){
+			var maxValue = 0;
+			for (var fieldKey in fieldObj){
+				if (fieldKey != "TRACKOR_KEY"){
+					var fieldValue = fieldObj[fieldKey].value;
+					maxValue = checkedMaximum(fieldValue, maxValue);
+				}
+			}
+			searchOfObjects(fieldObj, maxValue);
+		}
+		
+		function checkedMaximum (fieldValue, maxValue) {
+			if (fieldValue && fieldValue > maxValue) {
+				maxValue = fieldValue;
+			}
+			return maxValue;
+		}
+		
+		function searchOfObjects(fieldObj, maxFieldValue) {
+
+			var colorIndex = -1;
+			
+			var captionCand = document.getElementById("text3731-9");
+			captionCand.textContent = fieldObj["TRACKOR_KEY"].value;
+			
+			var symArrowObj = document.getElementById("symRight");
+			var symArrowHeight = parseFloat(symArrowObj.getAttribute("height"));
+			
+			var svgArrows = document.getElementById("svgArrows");
+			var svgArrowsHeight = svgArrows.clientHeight;
+			
+			var heightMaxFieldUpd = svgArrowsHeight - symArrowHeight/2;
+			var coefOfInitChange = heightMaxFieldUpd / maxFieldValue;
+			
+			changeRectTower(fieldObj["C_TOTAL_POLE_HT_W_ANT_FT"], coefOfInitChange, svgArrowsHeight, maxFieldValue);
+			var divTblReference = document.getElementById("tblReference");
+			
+			for (var firstField in PAIRS_OF_FIELDS) {
+				firstFieldName = firstField;
+				secondFieldName = PAIRS_OF_FIELDS[firstField];
+				
+				var newTblReference = document.createElement("table");
+				var newTbodyReference = document.createElement("tbody");
+				
+				if (fieldObj[firstFieldName].value) {
+					
+					colorIndex = (colorIndex < COLORS.length - 1) ? ++colorIndex : 0;
+					var arrowType = "#symLeft";
+					var gElementX = 0;
+					var textX = 2;
+					creatingObjects(svgArrowsHeight, coefOfInitChange, symArrowHeight, colorIndex, fieldObj[firstFieldName], newTbodyReference, arrowType, gElementX, textX);
+				}
+				if (fieldObj[secondFieldName].value) {
+				
+					colorIndex = (colorIndex < COLORS.length - 1) ? ++colorIndex : 0;
+					
+					var arrowType = "#symRight";
+					var gElementX = 134;
+					var textX = 25;
+					creatingObjects(svgArrowsHeight, coefOfInitChange, symArrowHeight, colorIndex, fieldObj[secondFieldName], newTbodyReference, arrowType, gElementX, textX);
+				}
+				
+				newTblReference.appendChild(newTbodyReference);
+				divTblReference.appendChild(newTblReference);
+			}
+		}
+		
+		function changeRectTower (fieldObjTower, coefOfInitChange, svgArrowsHeight, maxFieldValue) {
+			heightTower = fieldObjTower.value ? fieldObjTower.value : maxFieldValue;
+			
+			var rectTower = document.getElementById("rectTower");
+			var rectTowerHeight = heightTower*coefOfInitChange;
+			var rectTowerY = svgArrowsHeight - rectTowerHeight;
+			rectTower.setAttribute("height", rectTowerHeight);
+			rectTower.setAttribute("y", rectTowerY);
+		}
+		
+		function creatingObjects(svgArrowsHeight, coefOfInitChange, symArrowHeight, colorIndex, fieldObj, tbodyReference, arrowType, gElementX, textX) {
+			var fieldLabel = fieldObj.label;
+			var heightFt = parseFloat(fieldObj.value);
+			var heightMtr = heightFt * 0.3048;
+					
+			var arrowY = svgArrowsHeight - heightFt * coefOfInitChange - symArrowHeight/2;
+			var heightStr = heightFt.toFixed(1) + "/" + heightMtr.toFixed(1);
+					
+			creatingTrReference(tbodyReference, heightStr, fieldLabel, COLORS[colorIndex]);
+			var gElement = creatingG(arrowY, gElementX, arrowType, COLORS[colorIndex]);
+			creatingSvgObjects(arrowType, COLORS[colorIndex], gElement);
+			creatingSvgText(heightStr, textX, gElement);
+		}
+		
+		function creatingTrReference(tbodyReference, numberNode, strNode, color){
+			
+			var rowReference = document.createElement("TR");
+				
+			var tdNumber = document.createElement("TD");
+			tdNumber.setAttribute("class", "h");
+			tdNumber.style.backgroundColor = color;
+			tdNumber.appendChild(document.createTextNode(numberNode));
+			rowReference.appendChild(tdNumber);
+			
+			var tdStr = document.createElement("TD");
+			tdStr.setAttribute("class", "d");
+			tdStr.appendChild(document.createTextNode(strNode));
+			rowReference.appendChild(tdStr);
+			
+			tbodyReference.appendChild(rowReference);
+		}
+		
+		function creatingG (heightArrow, xArrow, symArrow, fillArrow) {
+			var gElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
+			var translate = "translate(" + xArrow + "," + heightArrow + ")";
+			gElement.setAttributeNS(null, "transform", translate);
+			
+			document.getElementById("svgArrows").appendChild(gElement);
+			
+			return gElement;
+		}
+		
+		function creatingSvgObjects(symArrow, fillArrow, gElement) {
+			var polElement = document.createElementNS("http://www.w3.org/2000/svg", "use");
+			polElement.setAttributeNS(null, "href", symArrow);
+			polElement.setAttributeNS(null, "width", 125);
+			polElement.setAttributeNS(null, "height", 37.5);
+			polElement.style.fill = fillArrow;
+						
+			gElement.appendChild(polElement);
+		}
+		
+		function creatingSvgText(heightStr, xText, gElement) {
+			
+			var txtElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+			txtElement.setAttributeNS(null, "x", xText);
+			txtElement.setAttributeNS(null, "y", amendmentTextY);
+			txtElement.style.fontWeight = "bold";
+			txtElement.textContent = heightStr;
+			
+			gElement.appendChild(txtElement);
+		}		
+		
+		function to_size(action) {
+			var currentCoefScale = SCALE[scaleIndex];
+			var symArrow = document.getElementById("symRight");
+			var shiftOfElements = parseFloat(symArrow.getAttribute("height")) / 2;
+			
+			if (action === "+" && scaleIndex < SCALE.length - 1) {
+				scaleIndex = scaleIndex + 1;
+				var newCoefScale = SCALE[scaleIndex];
+				var coefScale = newCoefScale/currentCoefScale;
+				//можно указать постоянный коэффициент
+				//coefScale = 2;
+				
+				recalculation(shiftOfElements, coefScale);
+				
+			}else if (action === "-" && scaleIndex > 0) {
+				scaleIndex = scaleIndex - 1;
+				var newCoefScale = SCALE[scaleIndex];
+				var coefScale = newCoefScale/currentCoefScale;
+				//можно указать постоянный коэффициент
+				//coefScale = 0.5;
+				
+				recalculation(shiftOfElements, coefScale);
+			}
+		}
+		function recalculation(shiftOfElements, coefScale){
+			recalculationSvg(shiftOfElements, coefScale, "svgArrows");
+			recalculationRectTower(shiftOfElements, coefScale);
+						
+			$('g').each(function(i,elem) {
+				var gTransform = elem.getAttribute("transform");
+				var gTransformArray = gTransform.split(",");
+				var gTransformY = parseFloat(gTransformArray[1].replace(")", ""));
+				
+				var arrow = $(elem).children("use")[0];
+				var arrowHeight = parseFloat(arrow.getAttribute("height"));
+				var arrowTip = gTransformY;
+				var newTransformY = arrowTip * coefScale;
+				var newTransform = gTransformArray[0] + "," + newTransformY + ")";
+				
+				elem.setAttributeNS(null, "transform", newTransform);
+			});
+		}
+		
+		function recalculationSvg(shiftOfElements, coefScale, element) {
+			var svgElement = document.getElementById(element);
+			var svgElementHeight = parseFloat(svgElement.getAttribute("height"));
+			var svgElementVB = svgElement.getAttribute("viewBox").split(" ");
+			var svgElementVBHeight = parseFloat(svgElementVB[3]);
+			svgElementVB[3] = String((svgElementVBHeight - shiftOfElements) * coefScale + shiftOfElements);
+			svgElement.setAttribute("viewBox", svgElementVB.join(" "));
+			svgElement.setAttribute("height", (svgElementHeight - shiftOfElements) * coefScale + shiftOfElements);
+		}
+		
+		function recalculationRectTower(shiftOfElements, coefScale) {
+			var rectTower = document.getElementById("rectTower");
+			var rectTowerHeight = parseFloat(rectTower.getAttribute("height"));
+			var rectTowerY = parseFloat(rectTower.getAttribute("y"));
+			var newRectTowerHeight = rectTowerHeight * coefScale;
+			var newRectTowerY = (rectTowerY - shiftOfElements) * coefScale + shiftOfElements;
+			rectTower.setAttribute("height", newRectTowerHeight);
+			rectTower.setAttribute("y", newRectTowerY);
+		}
+	</script>
+    <style type="text/css">
+		body {
+			display:flex;
+			flex-direction: row;
+			font-size: 20px;
+			padding: 0;
+			margin: 0;
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			right: 0;
+			left: 0;
+		}
+        .diagram {
+			overflow: auto;
+			flex-grow: 1;
+			flex-shrink: ;
+            margin-top: 0.5em;
+        }
+		.heights {
+			flex-grow: 0;
+			flex-shrink: 0;
+			width: 40%;
+		}
+        .heights table {
+            border-spacing: 1em;
+        }
+        .heights td.h {
+            border: 0.1em solid black;
+            padding: 0.4em 0.6em; 
+            font-weight: bold;
+			white-space: nowrap;
+        }
+        .heights td.hh {
+            padding: 0.4em 0.6em; 
+            font-weight: bold;
+			white-space: nowrap;
+        }
+        .heights td.d {
+            padding-left: 1em;
+        }
+    </style>
+
+</head>
+<body onload="getParam()">
+<div class="diagram" align="center">
+	<p id="text3731-9" style="margin:0;px;font-style:normal;font-weight:normal;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.07731885">Tower Diagram</p>
+	<div style="position:fixed;display:block;width:24px;left:2px;top:0px">
+		<input onclick="to_size('+')" type="button" value="+" style="width:24px;height:21px">
+		<input onclick="to_size('-')" type="button" value="-" style="width:24px;height:21px">
+	</div>
+	<!--<?xml version="1.0" encoding="UTF-8" standalone="no"?>-->
+	<svg id="svgArrows" viewBox="0 0 260 667" width = "260" height = "667" style="position:relative;" xmlns="http://www.w3.org/2000/svg" version="1.0" encoding="UTF-8" standalone="no">
+		<symbol id="symRight" viewBox="0 0 125 37.5" width = "125" height = "37.5" style="position:absolute">
+			
+			<polygon points="125,30 125,7.5 25,7.5 25,0 0,18.75 25,37.5 25,30" style="stroke:#000000;stroke-width:0.5" id="polygon4187-4-5"></polygon>
+			
+		</symbol>
+		<symbol id="symLeft" viewBox="0 0 125 37.5" width = "125" height = "37.5" style="position: absolute;" >
+			
+			<polygon points="0,30 0,7.5 100,7.5 100,0 125,18.75 100,37.5 100,30 " style="stroke:#000000;stroke-width:0.5" id="polygon4187-4-5"></polygon>
+			
+		</symbol>
+		<rect id="rectTower"
+			style="stroke-linejoin:round;stroke:#000000;stroke-linecap:round;fill:none"
+			ry=".12188"
+			height="100%"
+			width="7"
+			y="0"
+			x="126" />
+	</svg>
+</div>
+<div id="divTblReference" class="heights">
+    <table id="tblReference">
+        <tbody>
+            <tr>
+                <td class="hh">ft / meters</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
