@@ -7,6 +7,9 @@
 		//var BASE_URL = "https://dev-mtrac.mobilitie.com/api/v3/";
 		//var BASE_URL = "https://mtrac.mobilitie.com/api/v3/";
 		var ARREY_FIELDS = ["XITOR_KEY", "C_TOTAL_POLE_HT_W_ANT_FT", "C_GQ_SCIP_ANTENNA_HEIGHT_FT", "C_OFFICIAL_RF_RAD_CENTER_RAD_FT", "C_GQ_SCP_RF_RAD_MEASURE_FT", "C_CND_OFC_TWR_HT_FT", "C_GQ_SCIP_POLE_HEIGHT_FT", "C_HEIGHT_OF_MW_ANTENNA_FT", "C_GQ_SCP_MW_RAD_CENTER_FT"];
+		
+		//to the left are the fields that are drawn to the left of the tower, 
+		//to the right are the fields that are drawn to the right of the tower
 		var PAIRS_OF_FIELDS = {
 			"C_GQ_SCIP_ANTENNA_HEIGHT_FT": "C_TOTAL_POLE_HT_W_ANT_FT",
 			"C_GQ_SCP_RF_RAD_MEASURE_FT": "C_OFFICIAL_RF_RAD_CENTER_RAD_FT",
@@ -87,6 +90,7 @@
 			}
 		}
 		
+		//combining field information (name, labels and field values) into one object
 		function creatingFieldObj(dataFieldValue, dataFieldLabel) {
 			var newFieldObj = {};
 			var flag = 0;
@@ -112,7 +116,9 @@
 			if (flag === 1){
 				searchMaximum(newFieldObj);
 			} else {
-				var captionCand = document.getElementById("pСaption");
+				//If no height value is received
+				//then the title is drawn and the height of the tower changes
+				var captionCand = document.getElementById("pCaption");
 				captionCand.textContent = newFieldObj["TRACKOR_KEY"].value;
 				document.getElementById('buttonsScale').style.display = 'none';
 				var svgArrowsHeight = getTheInitialHeight();
@@ -143,7 +149,7 @@
 
 			var colorIndex = -1;
 			
-			var captionCand = document.getElementById("pСaption");
+			var captionCand = document.getElementById("pCaption");
 			captionCand.textContent = fieldObj["TRACKOR_KEY"].value;
 			
 			var symArrowObj = document.getElementById("symRight");
@@ -157,7 +163,8 @@
 			
 			//changeRectTower(fieldObj["C_TOTAL_POLE_HT_W_ANT_FT"], coefOfInitChange, svgArrowsHeight, maxFieldValue);
 			var divTblReference = document.getElementById("tblReference");
-			
+
+			//distribution of arrows and creation of tables with reference information on the right
 			for (var firstField in PAIRS_OF_FIELDS) {
 				firstFieldName = firstField;
 				secondFieldName = PAIRS_OF_FIELDS[firstField];
@@ -185,6 +192,7 @@
 				divTblReference.appendChild(newTblReference);
 			}
 			
+			//percentage of tower parts
 			var heightTowerParts = {};
 			heightTowerParts["heightTowerTop"] = 20;
 			heightTowerParts["heightTowerCenter"] = 50;
@@ -194,12 +202,12 @@
 		}
 		
 		function getTheInitialHeight(){
-			var pСaption = document.getElementById("pСaption");
-			var pСaptionIndent = pСaption.getBoundingClientRect();
+			var pCaption = document.getElementById("pCaption");
+			var pCaptionIndent = pCaption.getBoundingClientRect();
 			var divDiagram = document.getElementById("divDiagram");
 			var divDiagramIndent = divDiagram.getBoundingClientRect();
 			
-			var initialHeight = document.documentElement.clientHeight - pСaptionIndent.top - pСaptionIndent.height - divDiagramIndent.top;
+			var initialHeight = document.documentElement.clientHeight - pCaptionIndent.top - pCaptionIndent.height - divDiagramIndent.top;
 			return initialHeight;
 		}
 		
@@ -218,8 +226,9 @@
 		}
 		
 		function changeRectTower (fieldObjTower, coefOfInitChange, svgArrowsHeight, maxFieldValue, heightTowerParts) {
+			//tower parameters
 			heightTower = fieldObjTower.value ? fieldObjTower.value : maxFieldValue;
-			
+
 			var svgTower = document.getElementById("svgTower");
 			var svgTowerHeight = heightTower*coefOfInitChange;
 			var svgTowerY = svgArrowsHeight - svgTowerHeight;
@@ -230,7 +239,8 @@
 			
 			svgTower.setAttribute("height", svgTowerHeight);
 			svgTower.setAttribute("y", svgTowerY);
-						
+
+			//height for upper large rectangles
 			var rectTopHeight = String(heightTowerParts["heightTowerTop"]) + "%";
 
 			var rectTopLeft = document.getElementById("rectTopLeft");
@@ -242,6 +252,7 @@
 			var rectTopRight = document.getElementById("rectTopRight");
 			rectTopRight.setAttribute("height", rectTopHeight);
 			
+			//parameters for small upper rectangles
 			var rectTopLittleHeight = heightTowerParts["heightTowerTop"] / 6;
 			var rectTopLittleHeightStr = String(rectTopLittleHeight) + "%";
 			var rectTopLittleY = String((heightTowerParts["heightTowerTop"] - rectTopLittleHeight) / 2) + "%";
@@ -254,6 +265,7 @@
 			rectTopRightLittle.setAttribute("height", rectTopLittleHeightStr);
 			rectTopRightLittle.setAttribute("y", rectTopLittleY);
 			
+			//parameters for the central rectangle
 			var rectCenterHeight = String(heightTowerParts["heightTowerCenter"]) + "%";
 			var rectCenterY = rectTopHeight;
 			
@@ -261,6 +273,7 @@
 			rectCenter.setAttribute("height", rectCenterHeight);
 			rectCenter.setAttribute("y", rectCenterY);
 			
+			//parameters for the bottom rectangle
 			var rectBottomHeight = String(heightTowerParts["heightTowerBottom"]) + "%";
 			var rectBottomY = String(heightTowerParts["heightTowerTop"] + heightTowerParts["heightTowerCenter"]) + "%";
 			
@@ -341,7 +354,7 @@
 				scaleIndex = scaleIndex + 1;
 				var newCoefScale = SCALE[scaleIndex];
 				var coefScale = newCoefScale/currentCoefScale;
-				//можно указать постоянный коэффициент
+				//You can specify a constant coefficient for lengthening the graph.
 				//coefScale = 2;
 				
 				recalculation(shiftOfElements, coefScale);
@@ -350,7 +363,7 @@
 				scaleIndex = scaleIndex - 1;
 				var newCoefScale = SCALE[scaleIndex];
 				var coefScale = newCoefScale/currentCoefScale;
-				//можно указать постоянный коэффициент
+				//You can specify a constant factor to reduce the length of the graph.
 				//coefScale = 0.5;
 				
 				recalculation(shiftOfElements, coefScale);
@@ -426,7 +439,7 @@
 			overflow: auto;
 			flex-grow: 1;
 			flex-shrink: ;
-            margin-top: 0.5em;
+			margin-top: 0.5em;
         }
 		.heights {
 			overflow: auto;
@@ -456,7 +469,7 @@
 </head>
 <body onload="getParam()">
 <div class="diagram" align="center" id="divDiagram">
-	<p id="pСaption" style="margin:0;px;font-style:normal;font-weight:normal;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.07731885">Tower Diagram</p>
+	<p id="pCaption" style="margin:0px;font-style:normal;font-weight:normal;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.07731885">Tower Diagram</p>
 	<div style="position:fixed;display:block;width:30px;left:2px;top:0px" id="buttonsScale">
 		<input onclick="to_size('+')" type="button" value="+" id="bnPlus" style="width:30px;height:25px">
 		<input onclick="to_size('-')" type="button" value="-" id="bnMinus" style="width:30px;height:25px;margin-top:2px">
